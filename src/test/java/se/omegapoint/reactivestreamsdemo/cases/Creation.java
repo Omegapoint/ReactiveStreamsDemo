@@ -1,8 +1,6 @@
 package se.omegapoint.reactivestreamsdemo.cases;
 
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.mockito.junit.MockitoJUnitRunner;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -11,7 +9,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Stream;
 
-@RunWith(MockitoJUnitRunner.class)
 public class Creation
 {
     @Test

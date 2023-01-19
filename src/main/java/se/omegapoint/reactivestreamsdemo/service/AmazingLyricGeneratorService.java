@@ -1,6 +1,5 @@
 package se.omegapoint.reactivestreamsdemo.service;
 
-import org.apache.commons.lang3.time.StopWatch;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -25,15 +24,11 @@ public class AmazingLyricGeneratorService
             throw new RuntimeException("Crashed due to underline character. Sensitive info!");
         }
 
-        StopWatch watch = new StopWatch();
-
         return lyricsService.getLyricLines(artist, song)
-                .doOnComplete(watch::start)
                 .flatMapSequential(lyricLine ->
                         quoteService.getRandomTaylorSwiftQuote()
                                 .flatMapMany(quote -> Flux.just(quote.getQuote(), lyricLine))
                 )
-                .doOnComplete(() -> System.out.println(watch.getTime()))
                 .filter(this::removeBadLines)
                 .collectList()
                 .map(Lyrics::fromLines);
