@@ -1,4 +1,4 @@
-package se.omegapoint.reactivestreamsdemo.cases;
+package se.omegapoint.reactivestreamsdemo.tutorial;
 
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
@@ -7,6 +7,7 @@ import reactor.core.publisher.Mono;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Random;
 import java.util.stream.Stream;
 
 public class Creation
@@ -74,6 +75,32 @@ public class Creation
         helloMono.subscribe(s -> System.out.println(s));
 
         helloMono.subscribe(s -> System.out.println(s));
+    }
+
+    @Test
+    public void nothingHappensUntilYouSubscribeQuestionMark()
+    {
+        long startTime = System.nanoTime();
+        System.out.println("Method start " + ((System.nanoTime() - startTime) / 1000));
+
+        Mono<String> largeMono = Mono.just(slowMethod("a"));
+        System.out.println("Publisher created " + ((System.nanoTime() - startTime) / 1000));
+
+        largeMono
+            .doOnSubscribe(subscription -> System.out.println("Subscribe " + ((System.nanoTime() - startTime) / 1000)))
+            .subscribe(s -> System.out.println("Success " + ((System.nanoTime() - startTime) / 1000)));
+
+        System.out.println("Method end " + ((System.nanoTime() - startTime) / 1000));
+    }
+
+    private String slowMethod(String input)
+    {
+        while (!input.startsWith("b"))
+        {
+            char c = (char) (new Random().nextInt(26) + 'a');
+            input = (input + c).substring(1);
+        }
+        return input;
     }
 
     @Test

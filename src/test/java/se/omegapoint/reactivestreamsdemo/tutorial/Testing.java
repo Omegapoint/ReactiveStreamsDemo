@@ -1,4 +1,4 @@
-package se.omegapoint.reactivestreamsdemo.cases;
+package se.omegapoint.reactivestreamsdemo.tutorial;
 
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
