@@ -15,10 +15,15 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import se.omegapoint.reactivestreamsdemo.service.MockedService;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 
@@ -130,6 +135,31 @@ public class LevelOne
 
         StepVerifier.create(publisher)
             .expectNextMatches(longs -> new HashSet<>(longs).size() == 1)
+            .verifyComplete();
+    }
+
+    @Test
+    void timeIsAFlatMap() {
+        AtomicBoolean mono1Subscribed = new AtomicBoolean(false);
+        AtomicBoolean mono2Subscribed = new AtomicBoolean(false);
+
+        Mono<String> mono1 = Mono.just("Hello")
+            .delayElement(Duration.ofMillis(500))
+            .doOnSubscribe(subscription -> mono1Subscribed.set(true));
+
+        Mono<String> mono2 = Mono.just(" world")
+            .delayElement(Duration.ofMillis(500))
+            .doOnSubscribe(subscription -> mono2Subscribed.set(true));
+
+        Mono<String> twice = mono1.flatMap(s -> mono2);
+
+        Instant start = Instant.now();
+        StepVerifier.create(twice)
+            .assertNext(result -> {
+                assertTrue(Duration.between(start, Instant.now()).toMillis() < 1000, "onNext should not take the combined time of both Monos");
+                assertTrue(mono1Subscribed.get(), "mono1 must be subscribed upon");
+                assertTrue(mono2Subscribed.get(), "mono2 must be subscribed upon");
+            })
             .verifyComplete();
     }
 }
