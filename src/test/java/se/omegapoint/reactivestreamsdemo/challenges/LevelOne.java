@@ -3,29 +3,20 @@ package se.omegapoint.reactivestreamsdemo.challenges;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentMatchers;
-import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
-import org.reactivestreams.Subscriber;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
-import se.omegapoint.reactivestreamsdemo.service.MockedService;
+import se.omegapoint.reactivestreamsdemo.service.FakeService;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -33,61 +24,76 @@ public class LevelOne
 {
     private final Random random = new Random();
     private final int localValue = random.nextInt();
-    private final int externalValue = random.nextInt();
-    private final Mono<Integer> externalRNG = Mono.just(externalValue);
+    private long lastCall = System.nanoTime();
 
-    @Mock
-    private Subscriber<String> subscriber;
-    @Mock
-    private MockedService sut = new MockedService();
+    private final FakeService sut = new FakeService();
 
     @BeforeEach
     public void before()
     {
-        when(sut.enrich(anyString())).thenAnswer(invocation -> Mono.just("super " + invocation.getArgument(0)));
-        when(sut.currentNanoTime()).thenAnswer(invocation -> Mono.defer(() -> Mono.just(System.nanoTime())));
-        when(sut.sendAnalyticsToDatabase(anyString())).thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
     }
 
     @Test
-    public void moreIsMore()
-    {
-        Mono<Integer> publisher = externalRNG
+    public void multi() {
+        Mono<Integer> publisher = Mono.just(5)
             //
             ;
 
         StepVerifier.create(publisher)
-            .expectNext(externalValue + localValue)
+            .expectNext(50)
             .verifyComplete();
     }
 
     @Test
-    public void dunderKatt()
+    public void newAndImproved()
     {
         Mono<String> publisher = Mono.just("cat")
             //
             ;
 
         StepVerifier.create(publisher)
-            .expectNext("super cat")
+            .expectNextMatches(sut::isEnriched)
             .verifyComplete();
-
-        Mockito.verify(sut, Mockito.times(1)).enrich(ArgumentMatchers.eq("cat"));
     }
 
     @Test
-    public void mess()
+    public void plainJane()
     {
-        Mono<String> publisher = Mono.just("foo")
+        Mono<String> publisher = Mono.just("cat")
+            .filter(s -> s.contains("super"))
             //
-            .map(s -> s + "bar");
+            ;
 
         StepVerifier.create(publisher)
-            .expectNext("foobar")
-            .verifyComplete();
+            .verifyErrorMatches(throwable -> throwable.getMessage().equals("Not cool enough"));
+    }
 
-        Mockito.verify(sut, Mockito.times(1)).sendAnalyticsToDatabase(eq("foo"));
-        Mockito.verify(subscriber).onSubscribe(any());
+    @Test
+    public void divideAnd()
+    {
+        Mono<List<Integer>> publisher = Flux.just(0, 1, 2, 3, 4)
+            .flatMap(integer ->
+                divide(10, integer)
+                //
+            )
+            .collectList();
+
+        StepVerifier.create(publisher)
+            .expectNext(List.of(10, 5, 3, 2))
+            .verifyComplete();
+    }
+
+    private Mono<Integer> divide(int num, int den)
+    {
+        if (den == 0)
+        {
+            if (num == 0)
+            {
+                return Mono.error(new RuntimeException("Undefined"));
+            }
+            return Mono.error(new RuntimeException("Divide by zero"));
+        }
+        return Mono.just(num/den);
     }
 
     @Test
@@ -139,6 +145,20 @@ public class LevelOne
     }
 
     @Test
+    public void mess()
+    {
+        Mono<String> publisher = Mono.just("foo")
+            //
+            .map(s -> s + "bar");
+
+        StepVerifier.create(publisher)
+            .expectNext("foobar")
+            .verifyComplete();
+
+        assertTrue(sut.analyticsSent());
+    }
+
+    @Test
     void timeIsAFlatMap() {
         AtomicBoolean mono1Subscribed = new AtomicBoolean(false);
         AtomicBoolean mono2Subscribed = new AtomicBoolean(false);
@@ -151,15 +171,64 @@ public class LevelOne
             .delayElement(Duration.ofMillis(500))
             .doOnSubscribe(subscription -> mono2Subscribed.set(true));
 
-        Mono<String> twice = mono1.flatMap(s -> mono2);
+        var both = mono1;
 
         Instant start = Instant.now();
-        StepVerifier.create(twice)
+        StepVerifier.create(both)
             .assertNext(result -> {
                 assertTrue(Duration.between(start, Instant.now()).toMillis() < 1000, "onNext should not take the combined time of both Monos");
                 assertTrue(mono1Subscribed.get(), "mono1 must be subscribed upon");
                 assertTrue(mono2Subscribed.get(), "mono2 must be subscribed upon");
             })
             .verifyComplete();
+    }
+
+    @Test
+    public void c()
+    {
+        Flux<String> hej = Flux.just("user1", "user2", "user3")
+                .flatMap(s -> getUserConfig(s)
+                    //
+                )
+            ;
+
+        StepVerifier.create(hej)
+            .expectNext("easy","default","hard")
+            .verifyComplete();
+    }
+
+    private Mono<String> getUserConfig(String user)
+    {
+        Map<String, Optional<String>> userConf = Map.of("user1", Optional.of("easy"), "user2", Optional.empty(), "user3", Optional.of("hard"));
+        return Mono.justOrEmpty(userConf.get(user));
+    }
+
+    @Test
+    public void chill()
+    {
+        Flux<Integer> offendingUsers = Flux.just(1, 2, 3, 4)
+            .flatMap(integer -> rateLimited()
+                //
+                .map(integer1 -> integer1 + integer)
+            );
+
+        StepVerifier.create(offendingUsers)
+            .expectNextMatches(integer -> integer - 1 == localValue)
+            .expectNextMatches(integer -> integer - 2 == localValue)
+            .expectNextMatches(integer -> integer - 3 == localValue)
+            .expectNextMatches(integer -> integer - 4 == localValue)
+            .verifyComplete();
+    }
+
+    private Mono<Integer> rateLimited()
+    {
+        long time = System.nanoTime();
+        if (time - this.lastCall < 1_000_000_000)
+        {
+            return Mono.error(new RuntimeException("Rate limit: 1 request per second"));
+        }
+
+        this.lastCall = time;
+        return Mono.just(localValue);
     }
 }
