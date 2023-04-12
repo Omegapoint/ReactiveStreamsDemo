@@ -11,6 +11,8 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import se.omegapoint.reactivestreamsdemo.service.FakeService;
 
+
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(MockitoExtension.class)
@@ -67,5 +69,24 @@ public class LevelTwo
             .verifyComplete();
 
         assertTrue(sut.processCompleted());
+    }
+
+    @Test
+    public void separationOfConcerns() {
+        String cloggedThread = Thread.currentThread().getName();
+        String[] publishedOnThread = new String[1];
+
+        Mono<String> publisher = Mono.fromCallable(() -> {
+            publishedOnThread[0] = Thread.currentThread().getName();
+            return "Hello, Omegapoint!";
+        })
+            //
+            ;
+
+        StepVerifier.create(publisher)
+            .expectNext("Hello, Omegapoint!")
+            .verifyComplete();
+
+        assertNotEquals(cloggedThread, publishedOnThread[0], "The publisher ran on the main test thread");
     }
 }

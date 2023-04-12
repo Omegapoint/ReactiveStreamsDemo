@@ -171,16 +171,19 @@ public class LevelOne
             .delayElement(Duration.ofMillis(500))
             .doOnSubscribe(subscription -> mono2Subscribed.set(true));
 
-        var both = mono1;
+        var both = mono1
+            //
+            ;
 
-        Instant start = Instant.now();
-        StepVerifier.create(both)
-            .assertNext(result -> {
-                assertTrue(Duration.between(start, Instant.now()).toMillis() < 1000, "onNext should not take the combined time of both Monos");
+        Duration timeTaken = StepVerifier.create(both)
+            .assertNext(result ->
+            {
                 assertTrue(mono1Subscribed.get(), "mono1 must be subscribed upon");
                 assertTrue(mono2Subscribed.get(), "mono2 must be subscribed upon");
             })
             .verifyComplete();
+
+        assertTrue(timeTaken.toMillis() < 600, "Must complete in less than 600 ms");
     }
 
     @Test
