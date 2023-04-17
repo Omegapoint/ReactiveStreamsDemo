@@ -12,7 +12,6 @@ import reactor.test.StepVerifier;
 import se.omegapoint.reactivestreamsdemo.service.FakeService;
 
 import java.time.Duration;
-import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -71,7 +70,7 @@ public class LevelOne
     @Test
     public void divideAnd()
     {
-        Mono<List<Integer>> publisher = Flux.just(0, 1, 2, 3, 4)
+        Mono<List<Integer>> publisher = Flux.range(0, 5)
             .flatMap(integer ->
                 divide(10, integer)
                 //
@@ -135,7 +134,7 @@ public class LevelOne
             //
             ;
 
-        Mono<List<Long>> publisher = Flux.just(1, 2, 3)
+        Mono<List<Long>> publisher = Flux.range(0, 3)
             .concatMap(integer -> data)
             .collectList();
 
@@ -202,18 +201,20 @@ public class LevelOne
 
     private Mono<String> getUserConfig(String user)
     {
-        Map<String, Optional<String>> userConf = Map.of("user1", Optional.of("easy"), "user2", Optional.empty(), "user3", Optional.of("hard"));
+        Map<String, Optional<String>> userConf = Map.of(
+            "user1", Optional.of("easy"),
+            "user2", Optional.empty(),
+            "user3", Optional.of("hard"));
         return Mono.justOrEmpty(userConf.get(user));
     }
 
     @Test
     public void chill()
     {
-        Flux<Integer> offendingUsers = Flux.just(1, 2, 3, 4)
+        Flux<Integer> offendingUsers = Flux.range(1, 4)
+            //
             .flatMap(integer -> rateLimited()
-                //
-                .map(integer1 -> integer1 + integer)
-            );
+                .map(integer1 -> integer1 + integer));
 
         StepVerifier.create(offendingUsers)
             .expectNextMatches(integer -> integer - 1 == localValue)
