@@ -1,6 +1,5 @@
 package se.omegapoint.reactivestreamsdemo.challenges;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -19,11 +18,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @MockitoSettings(strictness = Strictness.LENIENT)
 public class LevelZero
 {
-    @BeforeEach
-    public void before()
-    {
-    }
-
     @Test
     public void helloWorld()
     {

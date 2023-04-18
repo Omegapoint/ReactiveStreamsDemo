@@ -25,11 +25,12 @@ public class LevelOne
     private final int localValue = random.nextInt();
     private long lastCall = System.nanoTime();
 
-    private final FakeService sut = new FakeService();
+    private FakeService sut;
 
     @BeforeEach
     public void before()
     {
+        this.sut = new FakeService();
     }
 
     @Test
@@ -128,6 +129,20 @@ public class LevelOne
     }
 
     @Test
+    public void mess()
+    {
+        Mono<String> publisher = Mono.just("foo")
+            //
+            .map(s -> s + "bar");
+
+        StepVerifier.create(publisher)
+            .expectNext("foobar")
+            .verifyComplete();
+
+        assertTrue(sut.analyticsSent());
+    }
+
+    @Test
     public void isCaring()
     {
         Mono<Long> data = sut.currentNanoTime()
@@ -141,20 +156,6 @@ public class LevelOne
         StepVerifier.create(publisher)
             .expectNextMatches(longs -> new HashSet<>(longs).size() == 1)
             .verifyComplete();
-    }
-
-    @Test
-    public void mess()
-    {
-        Mono<String> publisher = Mono.just("foo")
-            //
-            .map(s -> s + "bar");
-
-        StepVerifier.create(publisher)
-            .expectNext("foobar")
-            .verifyComplete();
-
-        assertTrue(sut.analyticsSent());
     }
 
     @Test
@@ -205,6 +206,7 @@ public class LevelOne
             "user1", Optional.of("easy"),
             "user2", Optional.empty(),
             "user3", Optional.of("hard"));
+
         return Mono.justOrEmpty(userConf.get(user));
     }
 
@@ -234,5 +236,20 @@ public class LevelOne
 
         this.lastCall = time;
         return Mono.just(localValue);
+    }
+
+    @Test
+    public void onOff()
+    {
+        Mono<List<String>> data = Flux.range(0, 5)
+            .flatMap(i -> Mono.defer(() -> sut.whatToEatToday(i)
+                //
+                )
+            )
+            .collectList();
+
+        StepVerifier.create(data)
+            .expectNext(List.of("Super apple", "Fantastic banana", "Ultra orange", "Mega grape", "Hyper mango"))
+            .verifyComplete();
     }
 }

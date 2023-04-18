@@ -8,12 +8,14 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import se.omegapoint.reactivestreamsdemo.service.FakeService;
 
+import java.time.Duration;
+import java.util.Comparator;
 
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -28,7 +30,22 @@ public class LevelTwo
     }
 
     @Test
-    public void expandYourMind() {
+    public void noWait()
+    {
+        var publisher = Flux.just("user1", "user2")
+            .flatMap(s -> sut.archiveDataIfNeeded(s))
+            //
+        ;
+
+        StepVerifier.create(publisher)
+            .verifyComplete();
+
+        assertTrue(sut.userDataDeleted());
+    }
+
+    @Test
+    public void expandYourMind()
+    {
         var pageable = sut.firstPage();
 
         var publisher = pageable
@@ -72,21 +89,37 @@ public class LevelTwo
     }
 
     @Test
-    public void separationOfConcerns() {
-        String cloggedThread = Thread.currentThread().getName();
-        String[] publishedOnThread = new String[1];
+    public void clearTheWay()
+    {
+        boolean[] blockingThread = new boolean[1];
 
         Mono<String> publisher = Mono.fromCallable(() -> {
-            publishedOnThread[0] = Thread.currentThread().getName();
+            blockingThread[0] = Schedulers.isInNonBlockingThread();
             return "Hello, Omegapoint!";
         })
             //
             ;
 
-        StepVerifier.create(publisher)
+        StepVerifier.create(publisher.subscribeOn(Schedulers.boundedElastic()))
             .expectNext("Hello, Omegapoint!")
             .verifyComplete();
 
-        assertNotEquals(cloggedThread, publishedOnThread[0], "The publisher ran on the main test thread");
+        assertTrue(blockingThread[0], "The publisher ran on a blocking thread! This can clog the system");
+    }
+
+    @Test
+    public void spareNoExpenses()
+    {
+        Flux<Integer> factorials = Flux.range(1, 7)
+            .flatMap(integer -> sut.slowThing(integer)
+                //
+            )
+            .sort(Comparator.comparing(bigInteger -> bigInteger));
+
+        Duration duration = StepVerifier.create(factorials)
+            .expectNext(1, 2, 3, 4, 5, 6, 7)
+            .verifyComplete();
+
+        assertTrue(duration.toMillis() < 200);
     }
 }

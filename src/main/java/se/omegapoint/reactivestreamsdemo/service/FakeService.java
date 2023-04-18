@@ -13,9 +13,11 @@ public class FakeService
     private final long processTime = 5 + random.nextInt(15 - 5 + 1);
     private boolean analyticsSent = false;
     private boolean processCompleted = false;
+    private Map<String, String> userData = new HashMap<>(Map.of("user1", "bombs and terrorist plans", "user2", "password 123456"));
     private final List<String> superlatives = List.of("Super", "Fantastic", "Ultra", "Mega", "Hyper");
     private static final String[] sampleStrings = {"apple", "banana", "orange", "grape", "mango"};
     private final String currentSuperlative = superlatives.get(random.nextInt(superlatives.size()));
+    private boolean valueMissingAtThisNode = true;
     private final Map<String, Object> storage;
     private final String offendingUser;
 
@@ -101,10 +103,9 @@ public class FakeService
         });
     }
 
-    public Mono<String> sendAnalyticsToDatabase(String input)
+    public void sendAnalyticsToDatabase(String input)
     {
-        this.analyticsSent = true;
-        return Mono.just(input);
+        Mono.fromRunnable(() -> this.analyticsSent = true).subscribe();
     }
 
     public boolean analyticsSent()
@@ -188,6 +189,29 @@ public class FakeService
         return Mono.just(new Page("Data of page " + currentPage.page + 1, currentPage.page + 1));
     }
 
+    public Mono<Void> archiveDataIfNeeded(String userId)
+    {
+        String data = this.userData.get(userId);
+
+        boolean dataNeedsTobePreserved = data.contains("terrorist");
+        /* Imagine we send the data off to some database */
+
+        return Mono.empty();
+    }
+
+    public Mono<Void> deleteAllUserData()
+    {
+        this.userData = new HashMap<>();
+
+        return Mono.empty();
+    }
+
+    public boolean userDataDeleted()
+    {
+        return this.userData.size() == 0;
+    }
+
+
     public class Page {
         public String data;
         public int page;
@@ -197,5 +221,23 @@ public class FakeService
             this.data = "data";
             this.page = page;
         }
+    }
+
+    public Mono<String> whatToEatToday(int i)
+    {
+        String s = this.superlatives.get(i);
+        if (s.equals(this.currentSuperlative) && this.valueMissingAtThisNode)
+        {
+            this.valueMissingAtThisNode = false;
+            return Mono.error(new RuntimeException("500 Internal Error"));
+        }
+        return Mono.just(s + " " + sampleStrings[i]);
+    }
+
+    public Mono<Integer> slowThing(Integer number) {
+        return Mono.fromCallable(() -> {
+            Thread.sleep(100);
+            return number;
+        });
     }
 }
