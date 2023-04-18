@@ -57,7 +57,20 @@ public class LevelOne
     }
 
     @Test
-    public void plainJane()
+    public void dupes()
+    {
+        var publisher = Flux.just("dog", "cat", "walrus", "cat", "horse", "cat", "seal")
+            //
+            .collectSortedList();
+
+        List<String> expected = List.of("cat", "dog", "horse", "seal", "walrus");
+        StepVerifier.create(publisher)
+            .expectNext(expected)
+            .verifyComplete();
+    }
+
+    @Test
+    public void plain()
     {
         Mono<String> publisher = Mono.just("cat")
             .filter(s -> s.contains("super"))
@@ -69,7 +82,7 @@ public class LevelOne
     }
 
     @Test
-    public void divideAnd()
+    public void divideAndControl()
     {
         Mono<List<Integer>> publisher = Flux.range(0, 5)
             .flatMap(integer ->
@@ -242,9 +255,8 @@ public class LevelOne
     public void onOff()
     {
         Mono<List<String>> data = Flux.range(0, 5)
-            .flatMap(i -> Mono.defer(() -> sut.whatToEatToday(i)
+            .flatMap(i -> Mono.defer(() -> sut.whatToEatToday(i))
                 //
-                )
             )
             .collectList();
 
