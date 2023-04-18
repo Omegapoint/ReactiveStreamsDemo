@@ -40,7 +40,7 @@ public class LevelOne
             ;
 
         StepVerifier.create(publisher)
-            .expectNext(50)
+            .expectNext(localValue * 5)
             .verifyComplete();
     }
 
