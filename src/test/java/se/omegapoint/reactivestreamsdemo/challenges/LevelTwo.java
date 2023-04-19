@@ -34,7 +34,7 @@ public class LevelTwo
     {
         var publisher = Flux.just("user1", "user2")
             .flatMap(s -> sut.archiveDataIfNeeded(s))
-            //
+            // sut.deleteAllUserData
         ;
 
         StepVerifier.create(publisher)
@@ -49,7 +49,7 @@ public class LevelTwo
         var pageable = sut.firstPage();
 
         var publisher = pageable
-            //
+            // sut.nextPage
             .takeWhile(song -> song.page < 10)
             .last()
         ;
@@ -63,29 +63,14 @@ public class LevelTwo
     public void didSomeDigging()
     {
         Flux<String> offendingUsers = sut.getData("")
-            //
+            // dig
             .filter(s -> s.contains("illegalDocument"))
-            //
+            // parse
             ;
 
         StepVerifier.create(offendingUsers)
             .expectNextMatches(s -> sut.offendingUser(s))
             .verifyComplete();
-    }
-
-    @Test
-    public void illBeBack()
-    {
-        Mono<Boolean> processCheck = sut.checkIfProcessCompleted()
-            //
-            //
-            ;
-
-        StepVerifier.create(processCheck)
-            .expectNext(true)
-            .verifyComplete();
-
-        assertTrue(sut.processCompleted());
     }
 
     @Test
@@ -110,16 +95,45 @@ public class LevelTwo
     @Test
     public void spareNoExpenses()
     {
-        Flux<Integer> factorials = Flux.range(1, 7)
-            .flatMap(integer -> sut.slowThing(integer)
+        Flux<Integer> publisher = Flux.range(1, 7)
+            .flatMap(integer ->
+                    sut.slowThing(integer)
                 //
             )
-            .sort(Comparator.comparing(bigInteger -> bigInteger));
+            .sort(Comparator.comparing(i -> i));
 
-        Duration duration = StepVerifier.create(factorials)
+        Duration duration = StepVerifier.create(publisher)
             .expectNext(1, 2, 3, 4, 5, 6, 7)
             .verifyComplete();
 
         assertTrue(duration.toMillis() < 200);
+    }
+
+    @Test
+    public void justOneSeq() {
+        Flux<Integer> publisher = Flux.range(0, 10)
+            // sut.variableThing
+            ;
+
+        StepVerifier.create(publisher)
+            .expectNext(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+            .verifyComplete();
+
+        assertTrue(sut.numberOfTimesVariableThingCalled(10));
+    }
+
+    @Test
+    public void illBeBack()
+    {
+        Mono<Boolean> processCheck = sut.checkIfProcessCompleted()
+            //
+            //
+            ;
+
+        StepVerifier.create(processCheck)
+            .expectNext(true)
+            .verifyComplete();
+
+        assertTrue(sut.processCompleted());
     }
 }

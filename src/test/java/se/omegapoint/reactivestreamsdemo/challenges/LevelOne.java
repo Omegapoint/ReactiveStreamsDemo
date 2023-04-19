@@ -13,7 +13,6 @@ import se.omegapoint.reactivestreamsdemo.service.FakeService;
 
 import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -48,7 +47,7 @@ public class LevelOne
     public void newAndImproved()
     {
         Mono<String> publisher = Mono.just("cat")
-            //
+            // sut.enrich
             ;
 
         StepVerifier.create(publisher)
@@ -57,7 +56,7 @@ public class LevelOne
     }
 
     @Test
-    public void dupes()
+    public void dedupe()
     {
         var publisher = Flux.just("dog", "cat", "walrus", "cat", "horse", "cat", "seal")
             //
@@ -129,14 +128,14 @@ public class LevelOne
     }
 
     @Test
-    public void theEmperorOfChinaDislikesFoo()
+    public void theEmperorOfChinaDislikesBar()
     {
         Flux<String> publisher = Flux.just("foo", "bar", "baz")
             //
             ;
 
         StepVerifier.create(publisher)
-            .expectNext("bar")
+            .expectNext("foo")
             .expectNext("baz")
             .verifyComplete();
     }
@@ -145,7 +144,7 @@ public class LevelOne
     public void mess()
     {
         Mono<String> publisher = Mono.just("foo")
-            //
+            // sut.sendAnalyticsToDatabase
             .map(s -> s + "bar");
 
         StepVerifier.create(publisher)
@@ -172,30 +171,16 @@ public class LevelOne
     }
 
     @Test
-    void timeIsAFlatMap() {
-        AtomicBoolean mono1Subscribed = new AtomicBoolean(false);
-        AtomicBoolean mono2Subscribed = new AtomicBoolean(false);
-
-        Mono<String> mono1 = Mono.just("Hello")
-            .delayElement(Duration.ofMillis(500))
-            .doOnSubscribe(subscription -> mono1Subscribed.set(true));
-
-        Mono<String> mono2 = Mono.just(" world")
-            .delayElement(Duration.ofMillis(500))
-            .doOnSubscribe(subscription -> mono2Subscribed.set(true));
-
-        var both = mono1
-            //
-            ;
+    public void timeIsAFlatMap() {
+        Mono<String> first = sut.firstPublisher();
+        Mono<String> second = sut.secondPublisher();
+        Mono<?> both = null;
 
         Duration timeTaken = StepVerifier.create(both)
-            .assertNext(result ->
-            {
-                assertTrue(mono1Subscribed.get(), "mono1 must be subscribed upon");
-                assertTrue(mono2Subscribed.get(), "mono2 must be subscribed upon");
-            })
+            .expectNextCount(1L)
             .verifyComplete();
 
+        assertTrue(sut.bothPublishersSubbedTo());
         assertTrue(timeTaken.toMillis() < 600, "Must complete in less than 600 ms");
     }
 

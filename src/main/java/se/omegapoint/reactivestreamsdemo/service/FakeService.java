@@ -2,7 +2,9 @@ package se.omegapoint.reactivestreamsdemo.service;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
+import java.time.Duration;
 import java.util.*;
 
 public class FakeService
@@ -13,6 +15,9 @@ public class FakeService
     private final long processTime = 5 + random.nextInt(15 - 5 + 1);
     private boolean analyticsSent = false;
     private boolean processCompleted = false;
+    private boolean publisher1Subbed = false;
+    private boolean publisher2Subbed = false;
+    private int variableThingCalled = 0;
     private Map<String, String> userData = new HashMap<>(Map.of("user1", "bombs and terrorist plans", "user2", "password 123456"));
     private final List<String> superlatives = List.of("Super", "Fantastic", "Ultra", "Mega", "Hyper");
     private static final String[] sampleStrings = {"apple", "banana", "orange", "grape", "mango"};
@@ -68,6 +73,7 @@ public class FakeService
             }
         }
     }
+
     private static Set<String> randomSet() {
         Set<String> resultSet = new HashSet<>();
         int setSize = random.nextInt(sampleStrings.length) + 1;
@@ -83,6 +89,25 @@ public class FakeService
     public boolean offendingUser(String user)
     {
         return user.equals(offendingUser);
+    }
+
+    public Mono<String> firstPublisher()
+    {
+        return Mono.just("Hello")
+            .delayElement(Duration.ofMillis(500))
+            .doOnSubscribe(subscription -> this.publisher1Subbed = true);
+    }
+
+    public Mono<String> secondPublisher()
+    {
+        return Mono.just("World")
+            .delayElement(Duration.ofMillis(500))
+            .doOnSubscribe(subscription -> this.publisher2Subbed = true);
+    }
+
+    public boolean bothPublishersSubbedTo()
+    {
+        return publisher1Subbed && publisher2Subbed;
     }
 
     public Mono<Boolean> checkIfProcessCompleted()
@@ -189,6 +214,17 @@ public class FakeService
         return Mono.just(new Page("Data of page " + currentPage.page + 1, currentPage.page + 1));
     }
 
+    public Mono<Integer> variableThing(Integer number) {
+        return Mono.fromCallable(() -> {
+            variableThingCalled++;
+            int i = random.nextInt(1000);
+            Thread.sleep(i);
+            return number;
+        })
+            .subscribeOn(Schedulers.parallel())
+            ;
+    }
+
     public Mono<Void> archiveDataIfNeeded(String userId)
     {
         String data = this.userData.get(userId);
@@ -209,6 +245,11 @@ public class FakeService
     public boolean userDataDeleted()
     {
         return this.userData.size() == 0;
+    }
+
+    public boolean numberOfTimesVariableThingCalled(int i)
+    {
+        return variableThingCalled == i;
     }
 
 
