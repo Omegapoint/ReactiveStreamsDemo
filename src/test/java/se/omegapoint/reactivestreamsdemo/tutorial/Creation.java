@@ -78,6 +78,20 @@ public class Creation
     }
 
     @Test
+    public void coldToHot()
+    {
+        Mono<Long> cold = Mono.defer(() -> Mono.just(System.nanoTime()));
+
+        Mono<Long> coldTurnedHot = cold.cache();
+
+        cold.subscribe(s -> System.out.println(s));
+        cold.subscribe(s -> System.out.println(s));
+        System.out.println();
+        coldTurnedHot.subscribe(s -> System.out.println(s));
+        coldTurnedHot.subscribe(s -> System.out.println(s));
+    }
+
+    @Test
     public void nothingHappensUntilYouSubscribeQuestionMark()
     {
         long startTime = System.nanoTime();

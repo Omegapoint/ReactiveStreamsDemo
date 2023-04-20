@@ -35,7 +35,7 @@ public class LevelZero
             //
             ;
 
-        assertEquals("Hello World", helloWorld);
+        assertEquals("Hello World!", helloWorld);
     }
 
     @Test

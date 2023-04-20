@@ -111,19 +111,12 @@ public class LevelOne
     @Test
     public void inTheEndItDoesReallyMatter()
     {
-        Flux<Object> publisher = Flux.generate(() -> 0, (state, sink) -> {
-            int next = random.nextInt(1000);
-            sink.next(next);
-            if (state == 1000) {
-                sink.complete();
-            }
-            return state + 1;
-        })
+        var publisher = Flux.range(0, 1000)
             //
             ;
 
         StepVerifier.create(publisher)
-            .expectNextCount(3L)
+            .expectNext( 997, 998, 999)
             .verifyComplete();
     }
 

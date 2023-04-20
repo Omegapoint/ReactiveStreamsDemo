@@ -43,9 +43,9 @@ public class Transform
     {
         Mono<List<String>> animals = Mono.just(List.of("Cat", "Dog", "Horse"));
 
-        Flux<String> animalsFlux = animals.flatMapMany(Flux::fromIterable);
+        Flux<String> animalsFlux = animals.flatMapMany(list -> Flux.fromIterable(list));
 
-        Flux<String> animalsInOrder = animalsFlux.flatMapSequential(Mono::just);
+        Flux<String> animalsInOrder = animalsFlux.flatMapSequential(data -> Mono.just(data));
 
         animals
                 .subscribe(System.out::println);
