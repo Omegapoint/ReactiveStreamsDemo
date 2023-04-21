@@ -63,7 +63,7 @@ public class LevelTwo
     public void didSomeDigging()
     {
         Flux<String> offendingUsers = sut.getData("")
-            // dig
+            // dig through files
             .filter(s -> s.contains("illegalDocument"))
             // parse
             ;

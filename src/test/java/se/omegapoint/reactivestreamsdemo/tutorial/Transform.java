@@ -172,6 +172,15 @@ public class Transform
     }
 
     @Test
+    public void recursion()
+    {
+        Flux<String> expandedHello = Mono.just("Hello")
+            .expand(s -> s.length() < 10 ? Mono.just(s + "o") : Mono.empty());
+
+        expandedHello.subscribe(System.out::println);
+    }
+
+    @Test
     public void handle()
     {
         Flux<String> animals = Flux.just("Cat", "Dog", "Horse", "House", "lastElement");
